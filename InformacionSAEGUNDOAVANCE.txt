@@ -1,0 +1,65 @@
+UNIVERSIDAD GERARDO BARRIOS SAN MIGUEL
+FACULTAD DE CIENCIA Y TECNOLOGÍA
+
+
+
+
+
+
+ASIGNATURA:
+PROGRAMACION COMPUTACIONAL III
+DOCENTE:
+WILLIAN Montes
+Actividad:
+AVANCES
+Estudiantes:
+Jimmy Abelardo Rivas Lazo
+
+
+Alta prioridad 
+Agregar Tareas con Detalles Específicos:
+
+Guardar la fecha seleccionada en el calendario y otras configuraciones específicas, como recordatorios o repeticiones.
+Motivo: El formulario actual permite añadir una tarea básica, pero los detalles clave (como fechas límite o recordatorios) deben almacenarse y mostrarse.
+Método Sugerido: Ampliar la estructura de datos de las tareas para incluir campos como due_date, priority, y reminder.
+
+
+
+Media Prioridad
+Estas funcionalidades mejoran la experiencia del usuario, pero no son críticas para la operatividad básica:
+
+Clasificación y Filtrado de Tareas:
+
+Permitir a los usuarios clasificar las tareas por prioridad, fecha, o lista asociada.
+Motivo: Facilita la organización y el enfoque en las tareas más urgentes.
+Método Sugerido: Añadir opciones para ordenar las tareas en self.tasks_widget.
+Notificaciones o Recordatorios:
+
+Enviar recordatorios al usuario basados en las configuraciones de la tarea.
+Motivo: Ayuda a los usuarios a mantenerse al día con sus tareas.
+Método Sugerido:
+Usar threading y la librería plyer para notificaciones en el sistema.
+Interfaz Mejorada para Nuevas Funciones:
+
+Mejorar los menús de recordatorios y repeticiones con opciones más claras y una estructura intuitiva.
+Motivo: Mejora la usabilidad y la experiencia del usuario.
+
+
+Objetivos faltantes y plan de desarrollo 
+
+Persistencia de Datos (Alta Prioridad)
+
+Descripción: Implementar un sistema para guardar y cargar datos de las listas y tareas, asegurando que los usuarios no pierdan su información al cerrar la aplicación.
+
+Estado Actual: Esta funcionalidad no está implementada. Actualmente, las listas y tareas se pierden al cerrar la aplicación.
+Plan de Desarrollo:
+usar SQLite para una solución más robusta, permitiendo consultas eficientes y persistencia confiable.
+
+Notificaciones (Media Prioridad)
+Descripción: Crear un sistema de notificaciones para recordar al usuario las tareas pendientes con base en sus fechas límite o recordatorios configurados.
+
+Estado Actual: Se han añadido menús de recordatorios, pero aún no se ejecutan notificaciones activas.
+
+Plan de Desarrollo:
+
+Usar la librería plyer para enviar notificaciones al sistema operativo.

@@ -10,7 +10,7 @@ from PyQt5.QtCore import Qt, QDate
 class ToDoAppModern(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Lista de Tareas - Inspirada en Microsoft To-Do")
+        self.setWindowTitle("Lista de Tareas ")
         self.setGeometry(200, 100, 800, 600)
 
         self.init_ui()
