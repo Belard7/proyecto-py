@@ -1,0 +1,83 @@
+/* Estilo General */
+QMainWindow {
+    background-color: #1e1e2e;
+    color: white;
+}
+
+QLabel {
+    color: white;
+}
+
+QPushButton {
+    background-color: #3b3b55;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+QPushButton:hover {
+    background-color: #505073;
+}
+
+QPushButton#addTaskButton {
+    padding: 15px;
+    font-size: 14px;
+}
+
+QPushButton#saveTaskButton {
+    background-color: #505073;
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 5px;
+}
+
+QFrame#sidebar {
+    background-color: #252537;
+}
+
+QListWidget#listsWidget, QListWidget#tasksWidget {
+    background-color: #2e2e40;
+    color: white;
+    border: none;
+    padding: 10px;
+}
+
+QListWidget::item {
+    padding: 10px;
+    border-bottom: 1px solid #3e3e5e;
+}
+
+QListWidget::item:selected {
+    background-color: #44445c;
+}
+
+QToolButton {
+    color: white;
+    background-color: #3b3b55;
+    border: none;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+QToolButton:hover {
+    background-color: #505073;
+}
+
+QLineEdit {
+    background-color: #3b3b55;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+QComboBox {
+    background-color: #3b3b55;
+    color: white;
+    padding: 5px;
+}
+
+QFrame#taskForm {
+    background-color: #2e2e40;
+    border: 1px solid #444;
+    border-radius: 10px;
+}
