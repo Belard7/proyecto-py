@@ -1,17 +1,20 @@
-
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QLabel, QFrame, QWidget,
-    QLineEdit, QComboBox, QToolButton, QStyle, QInputDialog, QCalendarWidget, QMenu, QAction, QDialog
+    QLineEdit, QComboBox, QToolButton, QStyle, QInputDialog, QCalendarWidget, QMenu, QAction, QDialog,
+    QListWidgetItem, QCheckBox
 )
 from PyQt5.QtGui import QFont, QIcon
-from PyQt5.QtCore import Qt, QDate
+from PyQt5.QtCore import Qt, QDate, QSize
+
 
 class ToDoAppModern(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Lista de Tareas ")
+        self.setWindowTitle("Lista de Tareas")
         self.setGeometry(200, 100, 800, 600)
+        
+        self.tasks_dict = { "My Day": [], "Important": [], "Planned": [], "Tasks": [] }
 
         self.init_ui()
         self.load_styles()
@@ -40,6 +43,8 @@ class ToDoAppModern(QMainWindow):
         self.lists_widget.setObjectName("listsWidget")
         self.lists_widget.addItems(["My Day", "Important", "Planned", "Tasks"])
         sidebar_layout.addWidget(self.lists_widget)
+        self.lists_widget.itemClicked.connect(self.change_list)
+
 
         add_list_button = QPushButton("New List")
         add_list_button.clicked.connect(self.add_new_list)
@@ -54,10 +59,10 @@ class ToDoAppModern(QMainWindow):
         main_view.setObjectName("mainView")
 
         # Título de la vista principal
-        title_label = QLabel("My Day")
-        title_label.setFont(QFont("Arial", 18, QFont.Bold))
-        title_label.setAlignment(Qt.AlignLeft)
-        main_view_layout.addWidget(title_label)
+        self.title_label = QLabel("My Day")
+        self.title_label.setFont(QFont("Arial", 18, QFont.Bold))
+        self.title_label.setAlignment(Qt.AlignLeft)
+        main_view_layout.addWidget(self.title_label)
 
         # Fecha
         date_label = QLabel(QDate.currentDate().toString("dddd, d MMMM"))
@@ -144,23 +149,81 @@ class ToDoAppModern(QMainWindow):
         self.task_form.setHidden(False)
 
     def save_task(self):
-        """Guarda la tarea y vuelve al estado inicial."""
+        """Guarda la tarea con un círculo como botón de completado."""
         task_name = self.task_name_input.text().strip()
         if not task_name:
             return
 
         selected_list = self.list_selector.currentText()
-        formatted_task = f"{task_name} ({selected_list})"
-        self.tasks_widget.addItem(formatted_task)
+        formatted_task = f"{task_name} - {selected_list}"
 
+        # Crear un nuevo QListWidgetItem
+        task_item = QListWidgetItem()
+
+        # Crear un contenedor horizontal para el checkbox y la etiqueta
+        container_widget = QWidget()
+        container_layout = QHBoxLayout()
+        container_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Crear el checkbox
+        checkbox = QCheckBox()
+        checkbox.setToolTip("Mark as completed")
+        checkbox.stateChanged.connect(lambda: self.toggle_task_completion(checkbox))
+
+        # Crear la etiqueta para la tarea
+        task_label = QLabel(formatted_task)
+        task_label.setFont(QFont("Arial", 12))
+
+        # Agregar checkbox y etiqueta al contenedor
+        container_layout.addWidget(checkbox)
+        container_layout.addWidget(task_label)
+        container_layout.addStretch()
+        container_widget.setLayout(container_layout)
+
+        # tamano del widget
+        task_item.setSizeHint(QSize(400, 50))  
+        self.tasks_widget.addItem(task_item)
+        self.tasks_widget.setItemWidget(task_item, container_widget)
+
+        if selected_list not in self.tasks_dict:
+            self.tasks_dict[selected_list] = []
+        self.tasks_dict[selected_list].append(formatted_task)
+        # Reiniciar el formulario
         self.task_name_input.clear()
         self.list_selector.setCurrentIndex(0)
-
         self.task_form.setHidden(True)
         self.add_task_button.setHidden(False)
 
+        self.update_main_view(selected_list)
+    
+    def update_main_view(self, selected_list):
+        self.tasks_widget.clear()
+        self.title_label.setText(selected_list)
+
+        tasks = self.tasks_dict.get(selected_list, [])
+        for task in tasks:
+            task_item = QListWidgetItem(task)
+            self.tasks_widget.addItem(task_item)
+
+    def change_list(self, item):
+        selected_list = item.text()
+        self.update_main_view(selected_list)
+
+
+    def toggle_task_completion(self, checkbox):
+        """Marca o desmarca la tarea como completada."""
+        parent_widget = checkbox.parentWidget()
+        label = parent_widget.findChild(QLabel)
+        if label:
+            if checkbox.isChecked():
+                label.setStyleSheet("color: grey;")
+            else:
+                label.setStyleSheet("color: white;")
+
+    
+
     def add_new_list(self):
-        # Funcionalidad para agregar nuevas listas
+        """Agrega una nueva lista a la barra lateral."""
         new_list_name, ok = QInputDialog.getText(self, "New List", "Enter list name:")
         if ok and new_list_name:
             self.lists_widget.addItem(new_list_name)
@@ -179,22 +242,18 @@ class ToDoAppModern(QMainWindow):
 
         dialog_layout = QVBoxLayout(dialog)
         calendar = QCalendarWidget(dialog)
+        dialog_layout.addWidget(calendar)
 
         selected_date = [None]
 
-        calendar.clicked.connect(lambda date: self.task_name_input.setText(date.toString("d MMM yyyy")))
-
-        dialog_layout.addWidget(calendar)
-        
         def set_selected_date(date):
             selected_date[0] = date.toString("d MMM yyyy")
-        
+
         calendar.clicked.connect(set_selected_date)
-        dialog_layout.addWidget(calendar)
 
         buttons_layout = QHBoxLayout()
         save_button = QPushButton("Save")
-        save_button.clicked.connect(lambda: self.save_date_and_close(dialog, selected_date))
+        save_button.clicked.connect(lambda: self.append_date_to_task(dialog, selected_date))
         buttons_layout.addWidget(save_button)
 
         close_button = QPushButton("Close")
@@ -202,14 +261,16 @@ class ToDoAppModern(QMainWindow):
         buttons_layout.addWidget(close_button)
 
         dialog_layout.addLayout(buttons_layout)
-
         dialog.exec_()
-    
-    
-    def save_date_and_close(self, dialog, selected_date):
-    
+
+    def append_date_to_task(self, dialog, selected_date):
+        """Agrega la fecha seleccionada al nombre de la tarea."""
         if selected_date[0]:
-            self.task_name_input.setText(selected_date[0])  # Coloca la fecha en el campo de texto
+            current_text = self.task_name_input.text().strip()
+            if current_text:
+                self.task_name_input.setText(f"{current_text} ({selected_date[0]})")
+            else:
+                self.task_name_input.setText(f"({selected_date[0]})")
         dialog.close()
 
     def show_reminder_menu(self):

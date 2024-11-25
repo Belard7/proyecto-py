@@ -8,6 +8,10 @@ QLabel {
     color: white;
 }
 
+QCheckBox {
+    color: red; 
+}
+
 QPushButton {
     background-color: #3b3b55;
     color: white;
