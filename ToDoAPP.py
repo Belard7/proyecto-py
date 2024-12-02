@@ -1,4 +1,8 @@
 import sys
+import sqlite3
+import os
+
+from functools import partial
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton, QListWidget, QLabel, QFrame, QWidget,
     QLineEdit, QComboBox, QToolButton, QStyle, QInputDialog, QCalendarWidget, QMenu, QAction, QDialog,
@@ -16,8 +20,20 @@ class ToDoAppModern(QMainWindow):
         
         self.tasks_dict = { "My Day": [], "Important": [], "Planned": [], "Tasks": [] }
 
+        self.init_db()
         self.init_ui()
         self.load_styles()
+
+
+    def init_db(self):
+        db_path = os.path.join('databases', 'tareasDB.db')
+
+        self.conn = sqlite3.connect(db_path)
+        self.cursor = self.conn.cursor()
+        self.cursor.execute(''' CREATE TABLE IF NOT EXISTS tasks ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, list TEXT NOT NULL, completed BOOLEAN NOT NULL DEFAULT 0 ) ''')
+        self.conn.commit()
+
+
 
     def init_ui(self):
         # Contenedor principal
@@ -148,77 +164,122 @@ class ToDoAppModern(QMainWindow):
         self.add_task_button.setHidden(True)
         self.task_form.setHidden(False)
 
+
+        
     def save_task(self):
-        """Guarda la tarea con un círculo como botón de completado."""
-        task_name = self.task_name_input.text().strip()
-        if not task_name:
-            return
+            """Guarda la tarea con manejo de errores robusto."""
+            try:
+                    task_name = self.task_name_input.text().strip()
+                    if not task_name:
+                        print("Task name is empty")
+                        return
 
-        selected_list = self.list_selector.currentText()
-        formatted_task = f"{task_name} - {selected_list}"
+                    selected_list = self.list_selector.currentText()
+                    formatted_task = f"{task_name} - {selected_list}"
 
-        # Crear un nuevo QListWidgetItem
-        task_item = QListWidgetItem()
+            # Crear y configurar el widget de la tarea
+                    task_item = QListWidgetItem()
+                    container_widget = QWidget()
+                    container_layout = QHBoxLayout()
+                    container_layout.setContentsMargins(0, 0, 0, 0)
 
-        # Crear un contenedor horizontal para el checkbox y la etiqueta
-        container_widget = QWidget()
-        container_layout = QHBoxLayout()
-        container_layout.setContentsMargins(0, 0, 0, 0)
+                    checkbox = QCheckBox()
+                    checkbox.setToolTip("Mark as completed")
+                    checkbox.stateChanged.connect(lambda: self.toggle_task_completion(checkbox))
 
-        # Crear el checkbox
-        checkbox = QCheckBox()
-        checkbox.setToolTip("Mark as completed")
-        checkbox.stateChanged.connect(lambda: self.toggle_task_completion(checkbox))
+                    task_label = QLabel(formatted_task)
+                    task_label.setFont(QFont("Arial", 12))
 
-        # Crear la etiqueta para la tarea
-        task_label = QLabel(formatted_task)
-        task_label.setFont(QFont("Arial", 12))
+                    container_layout.addWidget(checkbox)
+                    container_layout.addWidget(task_label)
+                    container_layout.addStretch()
+                    container_widget.setLayout(container_layout)
 
-        # Agregar checkbox y etiqueta al contenedor
-        container_layout.addWidget(checkbox)
-        container_layout.addWidget(task_label)
-        container_layout.addStretch()
-        container_widget.setLayout(container_layout)
+                    task_item.setSizeHint(QSize(400, 50))
+                    self.tasks_widget.addItem(task_item)
+                    self.tasks_widget.setItemWidget(task_item, container_widget)
 
-        # tamano del widget
-        task_item.setSizeHint(QSize(400, 50))  
-        self.tasks_widget.addItem(task_item)
-        self.tasks_widget.setItemWidget(task_item, container_widget)
+            # Guardar en la base de datos
+                    self.cursor.execute('INSERT INTO tasks (name, list, completed) VALUES (?, ?, ?)', (task_name, selected_list, False))
+                    self.conn.commit()
 
-        if selected_list not in self.tasks_dict:
-            self.tasks_dict[selected_list] = []
-        self.tasks_dict[selected_list].append(formatted_task)
-        # Reiniciar el formulario
-        self.task_name_input.clear()
-        self.list_selector.setCurrentIndex(0)
-        self.task_form.setHidden(True)
-        self.add_task_button.setHidden(False)
+            # Reiniciar el formulario
+                    self.task_name_input.clear()
+                    self.list_selector.setCurrentIndex(0)
+                    self.task_form.setHidden(True)
+                    self.add_task_button.setHidden(False)
 
-        self.update_main_view(selected_list)
-    
+                    self.update_main_view(selected_list)
+
+            except sqlite3.Error as e:
+                print(f"Database error in save_task: {e}")
+            except Exception as e:
+                 print(f"Unexpected error in save_task: {e}")
+
+
+
     def update_main_view(self, selected_list):
         self.tasks_widget.clear()
         self.title_label.setText(selected_list)
 
-        tasks = self.tasks_dict.get(selected_list, [])
-        for task in tasks:
-            task_item = QListWidgetItem(task)
-            self.tasks_widget.addItem(task_item)
+        try:
+            self.cursor.execute('SELECT name, completed FROM tasks WHERE list = ?', (selected_list,))
+            tasks = self.cursor.fetchall()
+
+            for task_name, completed in tasks:
+                # Crear un contenedor horizontal para el checkbox y la etiqueta
+                container_widget = QWidget()
+                container_layout = QHBoxLayout()
+                container_layout.setContentsMargins(0, 0, 0, 0)
+
+                # Crear el checkbox
+                checkbox = QCheckBox()
+                checkbox.setChecked(bool(completed))
+                checkbox.setToolTip("Mark as completed")
+                checkbox.stateChanged.connect(lambda state, name=task_name: self.toggle_task_completion(name, state))
+
+
+
+                # Crear la etiqueta para la tarea
+                task_label = QLabel(task_name)
+                task_label.setFont(QFont("Arial", 12))
+
+                # Agregar elementos al contenedor
+                container_layout.addWidget(checkbox)
+                container_layout.addWidget(task_label)
+                container_layout.addStretch()
+                container_widget.setLayout(container_layout)
+
+
+                # Añadir el widget al QListWidget
+                task_item = QListWidgetItem()
+                task_item.setSizeHint(QSize(600, 50))
+                self.tasks_widget.addItem(task_item)
+                self.tasks_widget.setItemWidget(task_item, container_widget)
+
+
+
+
+
+        except sqlite3.Error as e:
+            print(f"Database error in update_main_view: {e}")
+
+
 
     def change_list(self, item):
         selected_list = item.text()
         self.update_main_view(selected_list)
 
 
-    def toggle_task_completion(self, checkbox):
+    def toggle_task_completion(self,task_name,state):
         """Marca o desmarca la tarea como completada."""
-        parent_widget = checkbox.parentWidget()
-        label = parent_widget.findChild(QLabel)
-        if label:
-            if checkbox.isChecked():
-                label.setStyleSheet("color: grey;")
-            else:
-                label.setStyleSheet("color: white;")
+        completed = state == Qt.Checked
+
+        try:
+            self.cursor.execute('UPDATE tasks SET completed = ? WHERE name = ?', (completed, task_name))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            print(f"Database error in toggle_task_completion: {e}")
 
     
 
