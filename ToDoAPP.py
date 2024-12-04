@@ -214,7 +214,19 @@ class ToDoAppModern(QMainWindow):
             except sqlite3.Error as e:
                 print(f"Database error in save_task: {e}")
             except Exception as e:
-                 print(f"Unexpected error in save_task: {e}")
+                print(f"Unexpected error in save_task: {e}")
+
+    def delete_task(self, task_name):
+        try:
+            self.cursor.execute('DELETE FROM tasks WHERE name = ?',(task_name,))
+            self.conn.commit()
+            self.update_main_view(self.title_label.text())
+        except sqlite3.Error as e:
+            print(f"error al eliminar la tarea {e}")
+
+    def handle_checkbox(self, state, task_name):
+        if state == Qt.Checked:
+            self.delete_task(task_name)
 
 
 
@@ -236,13 +248,14 @@ class ToDoAppModern(QMainWindow):
                 checkbox = QCheckBox()
                 checkbox.setChecked(bool(completed))
                 checkbox.setToolTip("Mark as completed")
-                checkbox.stateChanged.connect(lambda state, name=task_name: self.toggle_task_completion(name, state))
+                checkbox.stateChanged.connect(lambda state, name=task_name: self.handle_checkbox(state, name))
 
 
 
                 # Crear la etiqueta para la tarea
                 task_label = QLabel(task_name)
                 task_label.setFont(QFont("Arial", 12))
+            
 
                 # Agregar elementos al contenedor
                 container_layout.addWidget(checkbox)
